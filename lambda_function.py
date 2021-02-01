@@ -65,10 +65,10 @@ def lambda_handler(event, context):
                     file_status="copy unsuccessfully"
                 else:
                     print("Error: file has been processed")
-                    #return #comment this line for testing
+                    return #comment this line for testing
                 
                 
-                file_status="copy successfully"#comment this line in non-prod
+                #file_status="copy successfully"#comment this line in non-prod
                 #construct the slack message 
                 file_id = str(sqlresult[0])
                 file_submitted_by = str(sqlresult[9])
