@@ -54,7 +54,7 @@ def lambda_handler(event, context):
                 #connect to database to get information needed for slack
                 mydb = connectToDB(user, password, host, dbname)
                 exe = f"SELECT * FROM {JOB_TABLE_NAME} WHERE file_name = %s AND file_added_on = %s"
-                mydbCursor=mydb.cursor()
+                mydbCursor=mydb.cursor(prepared=True)
                 mydbCursor.execute(exe, (file_name, file_added_on))
                 sqlresult = mydbCursor.fetchone()
                 #determine which slack channel to send the message to
@@ -65,10 +65,10 @@ def lambda_handler(event, context):
                     file_status="copy unsuccessfully"
                 else:
                     print("Error: file has been processed")
-                    return #comment this line for testing
+                    #return #comment this line for testing
                 
                 
-                #file_status="copy successfully"#comment this line in non-prod
+                file_status="copy successfully"#comment this line in non-prod
                 #construct the slack message 
                 file_id = str(sqlresult[0])
                 file_submitted_by = str(sqlresult[9])
@@ -142,15 +142,14 @@ def lambda_handler(event, context):
                             except Exception as e:
                                 message_sender_sent_status = "'"+"Email_Sent_Failure"+"'"
                                 message_sender_tuple = (message_sender_orig_file_id, message_sender_cbc_id, message_sender_recepient, message_sender_sentdate, message_sender_sender_email, message_sender_sent_status)
-                                message_sender_mysql = f"INSERT INTO {MESSAGE_SENDER_TABLE_NAME} VALUES (NULL,%s,%s,%s,%s,%s,%s)" %message_sender_tuple
-                                executeDB(mydb,message_sender_mysql)
+                                message_sender_mysql = f"INSERT INTO {MESSAGE_SENDER_TABLE_NAME} VALUES (NULL,%s,%s,%s,%s,%s,%s)"
+                                mydbCursor.execute(message_sender_mysql, message_sender_tuple)
                                 raise e
                             else:
                                 message_sender_sent_status = "'"+"Email_Sent_Success"+"'"
                                 message_sender_tuple = (message_sender_orig_file_id, message_sender_cbc_id, message_sender_recepient, message_sender_sentdate, message_sender_sender_email, message_sender_sent_status)
-                                message_sender_mysql = f"INSERT INTO {MESSAGE_SENDER_TABLE_NAME} VALUES (NULL,%s,%s,%s,%s,%s,%s)" %message_sender_tuple
-                                executeDB(mydb,message_sender_mysql)
-                                
+                                message_sender_mysql = f"INSERT INTO {MESSAGE_SENDER_TABLE_NAME} VALUES (NULL,%s,%s,%s,%s,%s,%s)"
+                                mydbCursor.execute(message_sender_mysql, message_sender_tuple)
                                 print ("Email sent!")
         
                                 
@@ -161,6 +160,7 @@ def lambda_handler(event, context):
                 raise e
             finally: 
                 #close the connection
+                mydb.commit()
                 mydb.close()
                 
     else:
